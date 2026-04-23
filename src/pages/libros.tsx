@@ -176,7 +176,7 @@ export default function Libros() {
   };
 
   return (
-    <div className="libros-page">
+    <div className="libros-page page-transition">
       <Header />
 
       <main className="libros-main">

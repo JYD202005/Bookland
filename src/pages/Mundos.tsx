@@ -78,7 +78,7 @@ export default function Mundos() {
   };
 
   return (
-    <div className="mundos-page">
+    <div className="mundos-page page-transition">
       <Header />
       
       <main className="mundos-main">

@@ -4,18 +4,22 @@ import Libros from './pages/libros.tsx';
 import Momentos from './pages/momentos';
 import Historias from './pages/historias';
 import Mundos from './pages/Mundos.tsx';
+import Personajes from './pages/Personajes.tsx';
 import SignOn from './components/sign_on';
 import SignUp from './components/sign_up';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/libros" element={<Libros />} />
         <Route path="/momentos" element={<Momentos />} />
         <Route path="/historias" element={<Historias />} />
         <Route path="/mundos" element={<Mundos />} />
+        <Route path="/personajes" element={<Personajes />} />
         <Route path="/login" element={<SignOn />} />
         <Route path="/registro" element={<SignUp />} />
       </Routes>

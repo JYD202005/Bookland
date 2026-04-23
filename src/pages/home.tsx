@@ -52,7 +52,7 @@ export default function Home() {
     }
 
     return (
-        <div className="hc-page">
+        <div className="hc-page page-transition">
             <Header />
 
             <main className="hc-main">
@@ -80,7 +80,7 @@ export default function Home() {
                                     >
                                         {isGeneratingAudio ? 'CARGANDO...' : 'OÍR'}
                                     </button>
-                                    <button className="hc-btn-outline">LEER</button>
+                                    <Link to="/libros" className="hc-btn-outline">LEER</Link>
                                 </>
                             ) : (
                                 <>
@@ -124,7 +124,7 @@ export default function Home() {
                             ciudades envueltas en niebla y selvas coloridas. El archivo espera
                             a aquellos dispuestos a escuchar el silencio entre las estrellas.
                         </p>
-                        <button className="hc-btn-outline">EXPLORAR AHORA</button>
+                        <Link to="/mundos" className="hc-btn-outline">EXPLORAR AHORA</Link>
                     </div>
                 </section>
 
@@ -135,7 +135,7 @@ export default function Home() {
                         <p>
                             Sumérgete en el conocimiento acumulado de un inmortal errante. Nuestro compendio digital organiza fragmentos de saber, canciones y registros históricos para tu búsqueda académica.
                         </p>
-                        <button className="hc-btn-primary">DESCUBRIR</button>
+                        <Link to="/libros" className="hc-btn-primary">DESCUBRIR</Link>
                     </div>
                     <div className="hc-section-img-wrapper short">
                         <div className="hc-section-img-gradient" />
