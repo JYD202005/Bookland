@@ -7,6 +7,78 @@
   color: var(--hc-on-surface, #e2e2e2);
 }
 
+/* ── Top Bar ── */
+.momentos-topbar {
+  background: rgba(18, 20, 20, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(118, 214, 213, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.momentos-topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.momentos-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.momentos-brand-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--hc-on-surface, #e2e2e2);
+  letter-spacing: 0.05em;
+}
+
+.momentos-brand-divider {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--hc-primary, #76d6d5);
+}
+
+.momentos-brand-section {
+  font-family: 'Newsreader', serif;
+  font-size: 1.1rem;
+  color: var(--hc-primary, #76d6d5);
+}
+
+.momentos-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.momentos-btn-back {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--hc-on-surface-variant, #bdc9c8);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.momentos-btn-back:hover {
+  color: var(--hc-primary, #76d6d5);
+}
+
+.momentos-btn-back .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
 
 .momentos-btn-new {
   display: flex;
@@ -449,21 +521,21 @@
 }
 
 .momento-modal-body {
-  padding: 1.25rem;
+  padding: 1.5rem 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .momento-modal-body label {
   display: block;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: var(--hc-on-surface-variant, #bdc9c8);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.6rem;
 }
 
 .momento-modal-body input,
@@ -500,8 +572,8 @@
 .momento-modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.25rem;
+  gap: 1rem;
+  padding: 1.25rem 1.75rem;
   border-top: 1px solid rgba(118, 214, 213, 0.08);
 }
 

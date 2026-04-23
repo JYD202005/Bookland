@@ -72,7 +72,7 @@ function PostSkeleton() {
 }
 
 /* ── Post Card ── */
-function PostCard({ post, user, onCommentAdded, onDeletePost }: { post: Post; user: User | null; onCommentAdded: (postId: number, comment: Comment) => void; onDeletePost: (postId: number) => void }) {
+function PostCard({ post, user, onCommentAdded, onDeletePost, onEditPost }: { post: Post; user: User | null; onCommentAdded: (postId: number, comment: Comment) => void; onDeletePost: (postId: number) => void; onEditPost: (post: Post) => void }) {
   const [expanded, setExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [newComment, setNewComment] = useState('')
@@ -132,17 +132,26 @@ function PostCard({ post, user, onCommentAdded, onDeletePost }: { post: Post; us
           </div>
         </div>
         {isAuthor && (
-          <button
-            className="momento-btn-delete"
-            onClick={() => {
-              if (window.confirm('¿Estás seguro de que deseas eliminar este momento?')) {
-                onDeletePost(post.id)
-              }
-            }}
-            title="Eliminar publicación"
-          >
-            <span className="material-symbols-outlined">delete</span>
-          </button>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button
+              className="momento-btn-delete"
+              onClick={() => onEditPost(post)}
+              title="Editar publicación"
+            >
+              <span className="material-symbols-outlined">edit</span>
+            </button>
+            <button
+              className="momento-btn-delete"
+              onClick={() => {
+                if (window.confirm('¿Estás seguro de que deseas eliminar este momento?')) {
+                  onDeletePost(post.id)
+                }
+              }}
+              title="Eliminar publicación"
+            >
+              <span className="material-symbols-outlined">delete</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -241,10 +250,10 @@ function PostCard({ post, user, onCommentAdded, onDeletePost }: { post: Post; us
 }
 
 /* ── New Post Modal ── */
-function NewPostModal({ user, onClose, onCreated }: { user: User; onClose: () => void; onCreated: (post: Post) => void }) {
-  const [titulo, setTitulo] = useState('')
-  const [contenido, setContenido] = useState('')
-  const [imagenUrl, setImagenUrl] = useState('')
+function NewPostModal({ user, onClose, onCreated, initialPost }: { user: User; onClose: () => void; onCreated: (post: Post, isEdit: boolean) => void; initialPost?: Post }) {
+  const [titulo, setTitulo] = useState(initialPost?.titulo ?? '')
+  const [contenido, setContenido] = useState(initialPost?.contenido ?? '')
+  const [imagenUrl, setImagenUrl] = useState(initialPost?.post_imagenes?.[0]?.imagen_url ?? initialPost?.imagen_fondo_url ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -256,45 +265,84 @@ function NewPostModal({ user, onClose, onCreated }: { user: User; onClose: () =>
     setError('')
 
     try {
-      // Create the post
-      const { data: postData, error: postErr } = await supabase
-        .from('posts')
-        .insert({
-          autor_id: user.id,
-          titulo: titulo.trim(),
-          contenido: contenido.trim(),
-          estado: 'publicado',
-          imagen_fondo_url: imagenUrl.trim() || null,
-        })
-        .select('*')
-        .single()
+      if (initialPost) {
+        // Edit mode
+        const { data: postData, error: postErr } = await supabase
+          .from('posts')
+          .update({
+            titulo: titulo.trim(),
+            contenido: contenido.trim(),
+            imagen_fondo_url: imagenUrl.trim() || null,
+          })
+          .eq('id', initialPost.id)
+          .select('*')
+          .single()
 
-      if (postErr) throw postErr
+        if (postErr) throw postErr
 
-      // If image URL provided, insert into post_imagenes
-      if (imagenUrl.trim()) {
-        await supabase.from('post_imagenes').insert({
-          post_id: postData.id,
-          imagen_url: imagenUrl.trim(),
-          descripcion_alt: titulo.trim(),
-          orden: 0,
-        })
+        // Delete old images and add the new one
+        await supabase.from('post_imagenes').delete().eq('post_id', initialPost.id)
+        
+        if (imagenUrl.trim()) {
+          await supabase.from('post_imagenes').insert({
+            post_id: initialPost.id,
+            imagen_url: imagenUrl.trim(),
+            descripcion_alt: titulo.trim(),
+            orden: 0,
+          })
+        }
+
+        const updatedPost: Post = {
+          ...initialPost,
+          ...postData,
+          post_imagenes: imagenUrl.trim()
+            ? [{ id: 0, imagen_url: imagenUrl.trim(), descripcion_alt: titulo.trim(), orden: 0 }]
+            : [],
+        }
+
+        onCreated(updatedPost, true)
+        onClose()
+      } else {
+        // Create mode
+        const { data: postData, error: postErr } = await supabase
+          .from('posts')
+          .insert({
+            autor_id: user.id,
+            titulo: titulo.trim(),
+            contenido: contenido.trim(),
+            estado: 'publicado',
+            imagen_fondo_url: imagenUrl.trim() || null,
+          })
+          .select('*')
+          .single()
+
+        if (postErr) throw postErr
+
+        // If image URL provided, insert into post_imagenes
+        if (imagenUrl.trim()) {
+          await supabase.from('post_imagenes').insert({
+            post_id: postData.id,
+            imagen_url: imagenUrl.trim(),
+            descripcion_alt: titulo.trim(),
+            orden: 0,
+          })
+        }
+
+        const newPost: Post = {
+          ...postData,
+          usuario: {
+            username: user.user_metadata?.username ?? user.email ?? 'Tú',
+            avatar_url: null,
+          },
+          post_imagenes: imagenUrl.trim()
+            ? [{ id: 0, imagen_url: imagenUrl.trim(), descripcion_alt: titulo.trim(), orden: 0 }]
+            : [],
+          comentarios: [],
+        }
+
+        onCreated(newPost, false)
+        onClose()
       }
-
-      const newPost: Post = {
-        ...postData,
-        usuario: {
-          username: user.user_metadata?.username ?? user.email ?? 'Tú',
-          avatar_url: null,
-        },
-        post_imagenes: imagenUrl.trim()
-          ? [{ id: 0, imagen_url: imagenUrl.trim(), descripcion_alt: titulo.trim(), orden: 0 }]
-          : [],
-        comentarios: [],
-      }
-
-      onCreated(newPost)
-      onClose()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error desconocido'
       setError(message)
@@ -307,7 +355,7 @@ function NewPostModal({ user, onClose, onCreated }: { user: User; onClose: () =>
     <div className="momento-modal-overlay" onClick={onClose}>
       <div className="momento-modal" onClick={(e) => e.stopPropagation()}>
         <div className="momento-modal-header">
-          <span className="momento-modal-title">Compartir un Momento</span>
+          <span className="momento-modal-title">{initialPost ? 'Editar Momento' : 'Compartir un Momento'}</span>
           <button className="momento-modal-close" onClick={onClose}>
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -352,7 +400,7 @@ function NewPostModal({ user, onClose, onCreated }: { user: User; onClose: () =>
               Cancelar
             </button>
             <button type="submit" className="momento-modal-submit" disabled={saving || !titulo.trim() || !contenido.trim()}>
-              {saving ? 'Publicando…' : 'Publicar'}
+              {saving ? (initialPost ? 'Guardando…' : 'Publicando…') : (initialPost ? 'Guardar Cambios' : 'Publicar')}
             </button>
           </div>
         </form>
@@ -368,6 +416,7 @@ export default function Momentos() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showNewPost, setShowNewPost] = useState(false)
+  const [editingPost, setEditingPost] = useState<Post | null>(null)
 
   // Auth
   useEffect(() => {
@@ -471,8 +520,36 @@ export default function Momentos() {
     )
   }
 
-  function handlePostCreated(post: Post) {
-    setPosts((prev) => [post, ...prev])
+  function handlePostCreated(post: Post, isEdit: boolean) {
+    if (isEdit) {
+      setPosts((prev) => prev.map((p) => p.id === post.id ? post : p))
+      toast.success('Momento actualizado correctamente', {
+        style: {
+          background: 'var(--hc-surface-container-high, #282a2b)',
+          color: 'var(--hc-on-surface, #e2e2e2)',
+          border: '1px solid rgba(118, 214, 213, 0.2)',
+          fontFamily: 'Manrope, sans-serif'
+        },
+        iconTheme: {
+          primary: 'var(--hc-primary, #76d6d5)',
+          secondary: '#121414',
+        },
+      })
+    } else {
+      setPosts((prev) => [post, ...prev])
+      toast.success('Momento publicado', {
+        style: {
+          background: 'var(--hc-surface-container-high, #282a2b)',
+          color: 'var(--hc-on-surface, #e2e2e2)',
+          border: '1px solid rgba(118, 214, 213, 0.2)',
+          fontFamily: 'Manrope, sans-serif'
+        },
+        iconTheme: {
+          primary: 'var(--hc-primary, #76d6d5)',
+          secondary: '#121414',
+        },
+      })
+    }
   }
 
   async function handleDeletePost(postId: number) {
@@ -516,7 +593,7 @@ export default function Momentos() {
       <Toaster position="bottom-center" />
       <Header>
         {user && (
-          <button className="momentos-btn-new" onClick={() => setShowNewPost(true)}>
+          <button className="momentos-btn-new" onClick={() => { setEditingPost(null); setShowNewPost(true); }}>
             <span className="material-symbols-outlined">edit_square</span>
             Nuevo
           </button>
@@ -547,6 +624,7 @@ export default function Momentos() {
                 user={user}
                 onCommentAdded={handleCommentAdded}
                 onDeletePost={handleDeletePost}
+                onEditPost={(p) => { setEditingPost(p); setShowNewPost(true); }}
               />
             </div>
           ))
@@ -557,7 +635,8 @@ export default function Momentos() {
       {showNewPost && user && (
         <NewPostModal
           user={user}
-          onClose={() => setShowNewPost(false)}
+          initialPost={editingPost ?? undefined}
+          onClose={() => { setShowNewPost(false); setEditingPost(null); }}
           onCreated={handlePostCreated}
         />
       )}
