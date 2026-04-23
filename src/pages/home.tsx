@@ -1,4 +1,8 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { supabase } from '../lib/supabase/supabase'
+import type { User } from '@supabase/supabase-js'
+import { narrarTexto } from '../lib/services/elevenlabs'
 import './home.css'
 import heroBg from '../assets/hero-bg.png'
 import cosmicRealm from '../assets/cosmic-realm.png'
@@ -18,6 +22,45 @@ const NAV_LINKS = ['HISTORIAS', 'MOMENTOS', 'LIBROS', 'PERSONAJES', 'MUNDOS']
 const FOOTER_LINKS = ['HISTORIAS', 'MOMENTOS', 'LIBROS', 'PERSONAJES', 'MUNDOS', 'PRIVACIDAD', 'TERMINOS']
 
 export default function Home() {
+    const [user, setUser] = useState<User | null>(null)
+    const [menuOpen, setMenuOpen] = useState(false)
+
+    useEffect(() => {
+        // Get current session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null)
+        })
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null)
+        })
+
+        return () => subscription.unsubscribe()
+    }, [])
+
+    const username = user?.user_metadata?.username as string | undefined
+
+    const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
+
+    async function handlePlayAudio() {
+        if (isGeneratingAudio) return
+        setIsGeneratingAudio(true)
+        try {
+            await narrarTexto("Descubre las historias de un Salta Mundos. Desentraña los secretos del universo, un cuento a la vez.")
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setIsGeneratingAudio(false)
+        }
+    }
+
+    async function handleLogout() {
+        await supabase.auth.signOut()
+        setUser(null)
+        setMenuOpen(false)
+    }
+
     return (
         <div className="hc-page">
             {/* ── TopNavBar ── */}
@@ -25,13 +68,61 @@ export default function Home() {
                 <div className="hc-header-inner">
                     <div className="hc-logo">CRONICAS DE UN SALTA MUNDOS</div>
                     <nav className="hc-nav">
-                        {NAV_LINKS.map((link, i) => (
-                            <a key={link} href="#" className={i === 0 ? 'active' : ''}>
-                                {link}
-                            </a>
-                        ))}
+                        {NAV_LINKS.map((link, i) =>
+                            link === 'MOMENTOS' ? (
+                                <Link key={link} to="/momentos" className={i === 0 ? 'active' : ''}>
+                                    {link}
+                                </Link>
+                            ) : (
+                                <a key={link} href="#" className={i === 0 ? 'active' : ''}>
+                                    {link}
+                                </a>
+                            )
+                        )}
                     </nav>
-                    <Link to="/registro" className="hc-header-btn">Únete ahora</Link>
+
+                    {user ? (
+                        <div className="hc-user-menu">
+                            <button
+                                className="hc-user-btn"
+                                onClick={() => setMenuOpen(!menuOpen)}
+                            >
+                                <span className="hc-user-avatar">
+                                    {(username ?? user.email ?? '?')[0].toUpperCase()}
+                                </span>
+                                <span className="hc-user-name">
+                                    {username ?? user.email}
+                                </span>
+                                <span className="material-symbols-outlined hc-user-chevron">
+                                    {menuOpen ? 'expand_less' : 'expand_more'}
+                                </span>
+                            </button>
+                            {menuOpen && (
+                                <div className="hc-user-dropdown">
+                                    <div className="hc-dropdown-header">
+                                        <span className="hc-dropdown-name">{username ?? 'Usuario'}</span>
+                                        <span className="hc-dropdown-email">{user.email}</span>
+                                    </div>
+                                    <div className="hc-dropdown-divider" />
+                                    <button className="hc-dropdown-item" onClick={() => { setMenuOpen(false) }}>
+                                        <span className="material-symbols-outlined">person</span>
+                                        Mi perfil
+                                    </button>
+                                    <button className="hc-dropdown-item" onClick={() => { setMenuOpen(false) }}>
+                                        <span className="material-symbols-outlined">settings</span>
+                                        Configuración
+                                    </button>
+                                    <div className="hc-dropdown-divider" />
+                                    <button className="hc-dropdown-item hc-dropdown-logout" onClick={handleLogout}>
+                                        <span className="material-symbols-outlined">logout</span>
+                                        Cerrar sesión
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <Link to="/registro" className="hc-header-btn">Únete ahora</Link>
+                    )}
                 </div>
             </header>
 
@@ -46,13 +137,28 @@ export default function Home() {
 
                     <div className="hc-hero-content">
                         <span className="hc-hero-label">Mas alla de lo conocido</span>
-                        <h1>EXPLORA EL COSMERE</h1>
+                        <h1>EXPLORA MULTIPLES UNIVERSOS</h1>
                         <p className="hc-hero-desc">
                             Descubre las historias de un Salta Mundos. Desentraña los secretos del universo, un cuento a la vez.
                         </p>
                         <div className="hc-hero-buttons">
-                            <button className="hc-btn-primary">OÍR</button>
-                            <button className="hc-btn-outline">LEER</button>
+                            {user ? (
+                                <>
+                                    <button 
+                                        className="hc-btn-primary"
+                                        onClick={handlePlayAudio}
+                                        disabled={isGeneratingAudio}
+                                    >
+                                        {isGeneratingAudio ? 'CARGANDO...' : 'OÍR'}
+                                    </button>
+                                    <button className="hc-btn-outline">LEER</button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link to="/login" className="hc-btn-primary">INICIAR SESIÓN</Link>
+                                    <Link to="/registro" className="hc-btn-outline">REGISTRARSE</Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 </section>

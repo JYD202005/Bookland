@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/home';
+import Momentos from './pages/momentos';
 import SignOn from './components/sign_on';
 import SignUp from './components/sign_up';
 
@@ -8,6 +9,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/momentos" element={<Momentos />} />
         <Route path="/login" element={<SignOn />} />
         <Route path="/registro" element={<SignUp />} />
       </Routes>
