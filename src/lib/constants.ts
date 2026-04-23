@@ -3,7 +3,7 @@ export const NAV_LINKS = [
     { name: 'MOMENTOS', path: '/momentos' },
     { name: 'LIBROS', path: '/libros' },
     { name: 'PERSONAJES', path: '#' },
-    { name: 'MUNDOS', path: '#' }
+    { name: 'MUNDOS', path: '/mundos' }
 ]
 
 export const FOOTER_LINKS = [
@@ -11,7 +11,7 @@ export const FOOTER_LINKS = [
     { name: 'MOMENTOS', path: '/momentos' },
     { name: 'LIBROS', path: '/libros' },
     { name: 'PERSONAJES', path: '#' },
-    { name: 'MUNDOS', path: '#' },
+    { name: 'MUNDOS', path: '/mundos' },
     { name: 'PRIVACIDAD', path: '#' },
     { name: 'TERMINOS', path: '#' }
 ]

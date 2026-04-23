@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/supabase";
+import { supabase } from "./supabase/supabase";
 
 export interface Book {
   id?: string;
@@ -146,7 +146,10 @@ export const getAvailableEpubs = async (path: string = ''): Promise<string[]> =>
         const subFiles = await getAvailableEpubs(itemPath);
         files = [...files, ...subFiles];
       } else {
-        files.push(itemPath);
+        // Ignorar archivos placeholder de Supabase
+        if (item.name !== '.emptyFolderPlaceholder' && item.name !== 'emptyFolderPlaceholder') {
+          files.push(itemPath);
+        }
       }
     }
     
@@ -169,7 +172,13 @@ export const findMatchingEpub = (bookTitle: string, allEpubs: string[]): string 
     const fileName = epubPath.split('/').pop()?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
     
     // Si el título del libro está contenido en el nombre del archivo o viceversa
-    return fileName.includes(cleanTitle) || cleanTitle.includes(fileName.replace('.epub', ''));
+    const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+    
+    // Búsqueda por palabras clave (ej: "Zelda" encuentra "The Legend of Zelda")
+    const titleWords = cleanTitle.split(' ').filter(w => w.length > 3);
+    const hasPartialMatch = titleWords.some(word => nameWithoutExt.includes(word));
+
+    return fileName.includes(cleanTitle) || cleanTitle.includes(nameWithoutExt) || hasPartialMatch;
   });
 };
 

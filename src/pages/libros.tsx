@@ -183,40 +183,12 @@ export default function Libros() {
         <section className="libros-hero">
           <div className="libros-hero-content">
             <h1>EL ARCHIVO DEL SALTAMUNDOS</h1>
-            <p className="hc-hero-desc" style={{textAlign: 'center'}}>
+            <p className="hc-hero-desc">
               Busca en las páginas de tus cuentos favoritos. Los mundos lejanos dejan allí su magia escondida para que tú la encuentres.            
             </p>
-            <form className="libros-search-form" onSubmit={handleSearch}>
-              <div className="search-input-wrapper">
-                <button type="submit" className="search-icon-btn" disabled={loading}>
-                  <span className="material-symbols-outlined">search</span>
-                </button>
-                <input 
-                  type="text" 
-                  placeholder="Busca clásicos, fantasía o tu próxima leyenda..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </form>
-
-            <div className="libros-hero-actions" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '15px' }}>
-              <a href="/apk/lithium.apk" className="hc-btn-outline" download style={{ fontSize: '0.8rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>android</span>
-                DESCARGAR LECTOR (LITHIUM APK)
-              </a>
-              <button 
-                onClick={() => setShowManual(true)}
-                className="hc-btn-outline" 
-                style={{ fontSize: '0.8rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ff4d4d', borderColor: 'rgba(255,77,77,0.3)' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>warning</span>
-                MANUAL PROHIBIDO
-              </button>
-            </div>
           </div>
 
-          <div className="carousel-section">
+          <div className="carousel-section" style={{ margin: '40px 0' }}>
             {featuredLoading ? (
               <div className="carousel-loader">CARGANDO EL ARCHIVO...</div>
             ) : featuredBooks.length > 0 && (
@@ -264,6 +236,37 @@ export default function Libros() {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="libros-hero-content">
+            <form className="libros-search-form" onSubmit={handleSearch}>
+              <div className="search-input-wrapper">
+                <input 
+                  type="text" 
+                  placeholder="Busca clásicos, fantasía o tu próxima leyenda..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button type="submit" className="search-icon-btn" disabled={loading}>
+                  <span className="material-symbols-outlined">search</span>
+                </button>
+              </div>
+            </form>
+
+            <div className="libros-hero-actions" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '15px' }}>
+              <a href="/apk/lithium.apk" className="hc-btn-outline" download style={{ fontSize: '0.8rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>android</span>
+                DESCARGAR LECTOR (LITHIUM APK)
+              </a>
+              <button 
+                onClick={() => setShowManual(true)}
+                className="hc-btn-outline" 
+                style={{ fontSize: '0.8rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ff4d4d', borderColor: 'rgba(255,77,77,0.3)' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>warning</span>
+                MANUAL PROHIBIDO
+              </button>
+            </div>
           </div>
         </section>
 
