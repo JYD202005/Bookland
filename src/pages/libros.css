@@ -6,13 +6,13 @@
 }
 
 .libros-main {
-  padding-top: 80px;
+  padding-top: 60px;
 }
 
 /* --- Hero Section --- */
 .libros-hero {
   position: relative;
-  padding: 100px 20px;
+  padding: 60px 20px 60px;
   text-align: center;
   background: radial-gradient(circle at center, rgba(82, 58, 153, 0.15) 0%, transparent 70%);
 }
@@ -23,9 +23,9 @@
 }
 
 .libros-hero h1 {
-  font-size: 4rem;
+  font-size: 3rem;
   font-weight: 800;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   background: linear-gradient(135deg, #fff 0%, #a288e3 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -33,7 +33,7 @@
 }
 
 .libros-search-form {
-  margin-top: 40px;
+  margin-top: 24px;
 }
 
 .search-input-wrapper {
@@ -43,8 +43,8 @@
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 50px;
-  padding: 8px 8px 8px 24px;
-  max-width: 600px;
+  padding: 6px 6px 6px 20px;
+  max-width: 500px;
   margin: 0 auto;
   transition: all 0.3s ease;
 }
@@ -87,11 +87,11 @@
 /* --- Carousel --- */
 .libros-carousel-container {
   width: 100%;
-  margin: 140px auto 0; /* Margen superior amplio y fijo */
-  overflow-x: clip; /* Solo bloquea el ancho de la página */
-  overflow-y: visible; /* Permite que las sombras flotantes se vean */
+  margin: 100px auto 0; /* Aumentado de 80px a 100px para evitar solapamiento */
+  overflow-x: clip; 
+  overflow-y: visible;
   position: relative;
-  padding-bottom: 120px;
+  padding-bottom: 80px;
   touch-action: pan-y;
   user-select: none;
   -webkit-user-drag: none;
@@ -100,7 +100,7 @@
 .carousel-perspective {
   perspective: 1000px;
   width: 200px;
-  height: 400px; /* Recuperamos un poco de altura para las sombras */
+  height: 320px; /* Reducido de 400px */
   margin: 0 auto;
   position: relative;
   display: flex;
@@ -129,7 +129,7 @@
 }
 
 .carousel-loader {
-  height: 400px;
+  height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -214,14 +214,14 @@
 }
 
 .floating-info {
-  margin-top: 35px;
+  margin-top: 24px;
   text-align: center;
   transition: all 0.5s ease;
-  width: 150%; /* Permitir que el texto sea un poco más ancho que la portada */
+  width: 150%; 
 }
 
 .floating-info h3 {
-  font-size: 1.1rem; /* Tamaño más compacto */
+  font-size: 1rem; 
   margin: 0;
   background: linear-gradient(135deg, #fff 0%, #a288e3 100%);
   -webkit-background-clip: text;
@@ -234,9 +234,9 @@
 }
 
 .floating-info p {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #a288e3;
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   font-weight: 500;
   opacity: 0.8;
 }
@@ -272,7 +272,7 @@
 .libros-results {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 60px 20px;
+  padding: 40px 20px;
 }
 
 .results-container {

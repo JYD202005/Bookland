@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { type Book, searchGoogleBooks, getLocalBooks, saveBookToLocal } from '../lib/book_service.ts';
+import { 
+  type Book, 
+  searchGoogleBooks, 
+  getLocalBooks, 
+  saveBookToLocal,
+  getAvailableEpubs,
+  findMatchingEpub,
+  getEpubDownloadUrl 
+} from '../lib/book_service.ts';
 import footerBg from '../assets/footer-bg.png';
 import './libros.css';
 
@@ -16,41 +24,67 @@ export default function Libros() {
   const [localBooks, setLocalBooks] = useState<Book[]>([]);
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [availableEpubs, setAvailableEpubs] = useState<string[]>([]);
+  const [showManual, setShowManual] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   useEffect(() => {
     fetchLocalBooks();
-    fetchFeaturedBooks();
+    fetchEpubsAndFeatured();
   }, []);
+
+  const fetchEpubsAndFeatured = async () => {
+    const epubs = await getAvailableEpubs();
+    setAvailableEpubs(epubs);
+    await fetchFeaturedBooks(epubs);
+  };
 
   useEffect(() => {
     if (featuredBooks.length === 0 || isPaused) return;
     
     const timer = setInterval(() => {
       setCarouselIndex((prev) => (prev + 1) % featuredBooks.length);
-    }, 90000); // 1:30 aproximado (90 segundos)
+    }, 8000); // 8 segundos es más estándar y dinámico
 
     return () => clearInterval(timer);
   }, [featuredBooks, isPaused]);
 
-  const fetchFeaturedBooks = async () => {
+  const fetchFeaturedBooks = async (epubsList?: string[]) => {
+    const currentEpubs = epubsList || availableEpubs;
     setFeaturedLoading(true);
     try {
-      // Buscamos libros del Cosmere y otros libros populares para mezclar
-      const [cosmereResults, popularResults] = await Promise.all([
-        searchGoogleBooks('Cosmere Brandon Sanderson'),
-        searchGoogleBooks('top fantasy sci-fi books 2024')
-      ]);
+      // Definimos las categorías que queremos mostrar
+      const categories = [
+        { name: 'Clásicos', query: 'subject:classics' },
+        { name: 'Fantasía', query: 'subject:fantasy' },
+        { name: 'Ficción', query: 'subject:fiction' }
+      ];
+
+      // Ejecutamos las búsquedas en paralelo con restricciones de idioma
+      const results = await Promise.all(
+        categories.map(cat => 
+          searchGoogleBooks(cat.query, { 
+            langRestrict: 'es', 
+            orderBy: 'relevance', 
+            maxResults: 10 
+          })
+        )
+      );
       
-      // Tomamos unos 7 del cosmere y el resto de populares
-      const cosmereMix = cosmereResults.filter(b => b.cover_url).slice(0, 7);
-      const popularMix = popularResults.filter(b => b.cover_url).slice(0, 13);
+      // Aplanamos los resultados y eliminamos duplicados, vinculando EPUB si existe
+      const allBooks = results.flat().filter((b, index, self) => 
+        b.cover_url && 
+        self.findIndex(t => t.title === b.title) === index
+      ).map(book => {
+        const matchingPath = findMatchingEpub(book.title, currentEpubs);
+        return matchingPath ? { ...book, epub_path: matchingPath } : book;
+      });
       
-      // Mezclamos y aleatorizamos un poco
-      const combined = [...cosmereMix, ...popularMix].sort(() => Math.random() - 0.5);
-      setFeaturedBooks(combined);
+      // Mezclamos para que el carrusel sea variado
+      const curated = allBooks.sort(() => Math.random() - 0.5).slice(0, 15);
+      setFeaturedBooks(curated);
     } catch (error) {
       console.error("Error fetching featured books", error);
     } finally {
@@ -100,9 +134,18 @@ export default function Libros() {
     if (!searchQuery.trim()) return;
 
     setLoading(true);
-    const results = await searchGoogleBooks(searchQuery);
-    setBooks(results);
-    setLoading(false);
+    try {
+      const results = await searchGoogleBooks(searchQuery);
+      const enriched = results.map(book => {
+        const matchingPath = findMatchingEpub(book.title, availableEpubs);
+        return matchingPath ? { ...book, epub_path: matchingPath } : book;
+      });
+      setBooks(enriched);
+    } catch (error) {
+      console.error("Error searching books", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSaveBook = async (book: Book) => {
@@ -129,7 +172,7 @@ export default function Libros() {
                 <span className="material-symbols-outlined search-icon">search</span>
                 <input 
                   type="text" 
-                  placeholder="Busca por título, autor o ISBN..." 
+                  placeholder="Busca clásicos, fantasía o tu próxima leyenda..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -138,6 +181,21 @@ export default function Libros() {
                 </button>
               </div>
             </form>
+
+            <div className="libros-hero-actions" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '15px' }}>
+              <a href="/apk/lithium.apk" className="hc-btn-outline" download style={{ fontSize: '0.8rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>android</span>
+                DESCARGAR LECTOR (LITHIUM APK)
+              </a>
+              <button 
+                onClick={() => setShowManual(true)}
+                className="hc-btn-outline" 
+                style={{ fontSize: '0.8rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ff4d4d', borderColor: 'rgba(255,77,77,0.3)' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>warning</span>
+                MANUAL PROHIBIDO
+              </button>
+            </div>
           </div>
 
           <div className="carousel-section">
@@ -269,7 +327,16 @@ export default function Libros() {
                 </div>
 
                 <div className="modal-actions">
-                  {selectedBook.epub_url ? (
+                  {selectedBook.epub_path ? (
+                    <a 
+                      href={getEpubDownloadUrl(selectedBook.epub_path)} 
+                      className="hc-btn-primary download-btn" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      DESCARGAR EPUB
+                    </a>
+                  ) : selectedBook.epub_url ? (
                     <a href={selectedBook.epub_url} className="hc-btn-primary download-btn" download>
                       DESCARGAR EPUB
                     </a>
@@ -284,6 +351,47 @@ export default function Libros() {
                     </button>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Manual Prohibido Modal ── */}
+      {showManual && (
+        <div className="book-modal-overlay" onClick={() => setShowManual(false)}>
+          <div className="book-modal manual-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <button className="close-modal" onClick={() => setShowManual(false)}>×</button>
+            <div className="modal-content">
+              <h2 style={{ color: '#ff4d4d', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span className="material-symbols-outlined">report_problem</span>
+                MANUAL DE "NO" PIRATERÍA
+              </h2>
+              <p style={{ fontStyle: 'italic', opacity: 0.8, marginBottom: '20px' }}>
+                "La piratería es mala, amigos. Muy mala. Por eso, BAJO NINGUNA CIRCUNSTANCIA sigas estos pasos para conseguir libros gratis..."
+              </p>
+              
+              <div className="manual-steps" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div className="step">
+                  <strong style={{ color: '#a288e3' }}>1. NO entres aquí:</strong>
+                  <p>Ignora completamente este enlace: <a href="https://ww3.lectulandia.co/" target="_blank" rel="noopener noreferrer" style={{ color: '#76d6d5' }}>Lectulandia</a>. Es un lugar lleno de libros que no deberías descargar.</p>
+                </div>
+                <div className="step">
+                  <strong style={{ color: '#a288e3' }}>2. NO busques tu libro:</strong>
+                  <p>Si por error entras, no uses la barra de búsqueda para encontrar esa joya oculta o libro que te falta.</p>
+                </div>
+                <div className="step">
+                  <strong style={{ color: '#a288e3' }}>3. EVITA los botones azules:</strong>
+                  <p>Primero verás uno que dice "EPUB". No lo toques. Si se abre publicidad, ciérrala (unas 2 o 3 veces) hasta que aparezca el botón definitivo que dice <strong style={{ color: '#76d6d5' }}>"Download now"</strong>. Ni se te ocurra darle clic y esperar pacientemente a que la descarga inicie sola.</p>
+                </div>
+                <div className="step">
+                  <strong style={{ color: '#a288e3' }}>4. USA el lector:</strong>
+                  <p>Una vez que "no" lo descargues, no uses el <strong>Lithium APK</strong> que te dejé arriba para leerlo cómodamente en tu celular.</p>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '30px', padding: '15px', background: 'rgba(255,77,77,0.1)', borderRadius: '8px', fontSize: '0.85rem' }}>
+                <strong>Advertencia:</strong> Este manual es meramente informativo sobre lo que NO debes hacer. Guiño, guiño.
               </div>
             </div>
           </div>

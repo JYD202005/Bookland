@@ -7,6 +7,7 @@ export interface Book {
   synopsis: string;
   cover_url: string;
   epub_url?: string;
+  epub_path?: string; // New: path in storage
   isbn?: string;
   pages?: number;
   published_date?: string;
@@ -15,15 +16,14 @@ export interface Book {
 
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
 
-export const searchGoogleBooks = async (query: string): Promise<Book[]> => {
+export const searchGoogleBooks = async (
+  query: string, 
+  options: { langRestrict?: string; printType?: string; orderBy?: string; maxResults?: number } = {}
+): Promise<Book[]> => {
+  const { langRestrict = 'es', printType = 'books', orderBy = 'relevance', maxResults = 20 } = options;
   try {
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=20${GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : ''}`;
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&langRestrict=${langRestrict}&printType=${printType}&orderBy=${orderBy}&maxResults=${maxResults}${GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : ''}`;
     const response = await fetch(url);
-    
-    if (response.status === 429) {
-      console.error('Límite de peticiones excedido (429). Considera usar una API Key válida.');
-      return [];
-    }
 
     const data = await response.json();
     
@@ -73,4 +73,60 @@ export const saveBookToLocal = async (book: Book): Promise<boolean> => {
   }
 
   return true;
+};
+
+/**
+ * Busca archivos EPUB en Supabase Storage para vincularlos
+ */
+export const getAvailableEpubs = async (path: string = ''): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase.storage.from('epubs').list(path, {
+      limit: 100,
+      offset: 0,
+      sortBy: { column: 'name', order: 'asc' }
+    });
+
+    if (error) throw error;
+    
+    let files: string[] = [];
+    
+    for (const item of data) {
+      const itemPath = path ? `${path}/${item.name}` : item.name;
+      
+      // Si no tiene id, es una carpeta (en el listado de storage)
+      // O si metadata es null
+      if (!item.id || item.metadata === null) {
+        const subFiles = await getAvailableEpubs(itemPath);
+        files = [...files, ...subFiles];
+      } else {
+        files.push(itemPath);
+      }
+    }
+    
+    return files;
+  } catch (err) {
+    console.error('Error fetching epubs:', err);
+    return [];
+  }
+};
+
+/**
+ * Intenta emparejar un libro con un archivo EPUB disponible
+ */
+export const findMatchingEpub = (bookTitle: string, allEpubs: string[]): string | undefined => {
+  const cleanTitle = bookTitle.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  
+  return allEpubs.find(epubPath => {
+    // El path puede ser "Comere/parte 1/Elantris..."
+    // Limpiamos el nombre del archivo (solo la parte final)
+    const fileName = epubPath.split('/').pop()?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
+    
+    // Si el título del libro está contenido en el nombre del archivo o viceversa
+    return fileName.includes(cleanTitle) || cleanTitle.includes(fileName.replace('.epub', ''));
+  });
+};
+
+export const getEpubDownloadUrl = (path: string): string => {
+  const { data } = supabase.storage.from('epubs').getPublicUrl(path);
+  return data.publicUrl;
 };
